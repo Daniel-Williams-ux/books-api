@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import BookModel from '../models/bookModel';
+import { body, validationResult } from 'express-validator';
 
 // Create a book
 export const createBook = async (req: Request, res: Response): Promise<void> => {
@@ -17,10 +18,28 @@ export const createBook = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-// Get all books
+// Get all books with pagination
 export const getBooks = async (req: Request, res: Response): Promise<void> => {
   try {
-    const books = await BookModel.find();
+    // Extract pagination parameters from the query string
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    // Validate pagination parameters
+    if (page < 1 || limit < 1) {
+      res.status(400).json({ message: 'Page and limit must be positive integers.' });
+      return;
+    }
+
+    // Calculate the number of documents to skip
+    const skip = (page - 1) * limit;
+
+    // Fetch paginated books
+    const books = await BookModel.find()
+      .skip(skip)
+      .limit(limit);
+
+    // Send the paginated response
     res.status(200).json(books);
   } catch (error) {
     if (error instanceof Error) {
