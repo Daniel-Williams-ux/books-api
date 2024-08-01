@@ -126,7 +126,13 @@ export const deleteBook = async (req: Request, res: Response): Promise<void> => 
 // Update the book cover image
 export const updateBookCover = async (req: Request, res: Response): Promise<void> => {
   try {
-    const updatedBook = await BookModel.findByIdAndUpdate(req.params.id, { coverImage: req.file?.path }, { new: true });
+    // Ensure a file was uploaded
+    if (!req.file) {
+      res.status(400).json({ message: 'No file uploaded' });
+      return;
+    }
+
+    const updatedBook = await BookModel.findByIdAndUpdate(req.params.id, { coverImage: req.file.path }, { new: true });
     if (!updatedBook) {
       res.status(404).json({ message: 'Book not found' });
       return;
