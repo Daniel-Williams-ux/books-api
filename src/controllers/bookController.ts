@@ -2,8 +2,27 @@ import { Request, Response } from 'express';
 import BookModel from '../models/bookModel';
 import { body, validationResult } from 'express-validator';
 
-// Create a book
+// Define validation rules for creating a book
+export const validateBookCreation = [
+  body('title').isString().withMessage('Title must be a string').notEmpty().withMessage('Title is required'),
+  body('author').isString().withMessage('Author must be a string').notEmpty().withMessage('Author is required'),
+  body('publishedDate').isISO8601().toDate().withMessage('Published date must be a valid ISO8601 date'),
+  body('isbn').isString().withMessage('ISBN must be a string').notEmpty().withMessage('ISBN is required')
+    .isLength({ min: 10, max: 13 }).withMessage('ISBN must be between 10 and 13 characters long')
+];
+
+// Create a book with validation
 export const createBook = async (req: Request, res: Response): Promise<void> => {
+  // Validate request body
+  await Promise.all(validateBookCreation.map(validator => validator.run(req)));
+
+  // Check for validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return;
+  }
+
   try {
     const { title, author, publishedDate, isbn, coverImage } = req.body;
     const newBook = new BookModel({ title, author, publishedDate, isbn, coverImage });
